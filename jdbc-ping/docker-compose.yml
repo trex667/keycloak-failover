@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:1.15.1
+    container_name: nginx
+    restart: on-failure
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:8080"
+
+  keycloak-1:
+     image: keycloak-failover:latest
+     command: [-Dkeycloak.migration.action=import -Dkeycloak.migration.provider=dir -Dkeycloak.migration.dir=/tmp/test-realm -Dkeycloak.migration.strategy=IGNORE_EXISTING]
+     environment:
+       - KEYCLOAK_USER=keycloak
+       - KEYCLOAK_PASSWORD=k
+       - DB_VENDOR=postgres
+       - DB_USER=admin
+       - DB_PASSWORD=password
+       - DB_ADDR=keycloak-db
+       - DB_PORT=5432
+       - DB_DATABASE=keycloakdb
+       - PROXY_ADDRESS_FORWARDING=true
+       - JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
+       - JGROUPS_DISCOVERY_PROPERTIES=datasource_jndi_name="java:jboss/datasources/KeycloakDS",initialize_sql="CREATE TABLE IF NOT EXISTS JGROUPSPING (own_addr varchar(200) NOT NULL, updated timestamp NOT NULL, cluster_name varchar(200) NOT NULL, ping_data blob, constraint PK_JGROUPSPING PRIMARY KEY (own_addr, cluster_name))",insert_single_sql="INSERT INTO JGROUPSPING (own_addr, updated, cluster_name, ping_data) values (?, NOW(), ?, ?)",clear_sql="DELETE FROM JGROUPSPING WHERE cluster_name = ?",delete_single_sql="DELETE FROM JGROUPSPING WHERE own_addr = ? AND cluster_name = ?",select_all_pingdata_sql="SELECT ping_data FROM JGROUPSPING WHERE cluster_name = ?",remove_all_data_on_view_change=true,remove_old_coords_on_view_change=true
+     depends_on:
+       - keycloak-db
+     volumes:
+       - ./test-realm:/tmp/test-realm
+
+  keycloak-2:
+    image: keycloak-failover:latest
+    environment:
+      - DB_VENDOR=postgres
+      - DB_USER=admin
+      - DB_PASSWORD=password
+      - DB_ADDR=keycloak-db
+      - DB_PORT=5432
+      - DB_DATABASE=keycloakdb
+      - PROXY_ADDRESS_FORWARDING=true
+      - JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
+      - JGROUPS_DISCOVERY_PROPERTIES=datasource_jndi_name="java:jboss/datasources/KeycloakDS",initialize_sql="CREATE TABLE IF NOT EXISTS JGROUPSPING (own_addr varchar(200) NOT NULL, updated timestamp NOT NULL, cluster_name varchar(200) NOT NULL, ping_data blob, constraint PK_JGROUPSPING PRIMARY KEY (own_addr, cluster_name))",insert_single_sql="INSERT INTO JGROUPSPING (own_addr, updated, cluster_name, ping_data) values (?, NOW(), ?, ?)",clear_sql="DELETE FROM JGROUPSPING WHERE cluster_name = ?",delete_single_sql="DELETE FROM JGROUPSPING WHERE own_addr = ? AND cluster_name = ?",select_all_pingdata_sql="SELECT ping_data FROM JGROUPSPING WHERE cluster_name = ?",remove_all_data_on_view_change=true,remove_old_coords_on_view_change=true
+    depends_on:
+      - keycloak-db
+
+  keycloak-db:
+    image: postgres:10
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: keycloakdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:
