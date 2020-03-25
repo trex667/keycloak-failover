@@ -1,5 +1,6 @@
 package org.schreibvehler.jmeter;
 
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 
 import javax.json.Json;
@@ -24,12 +25,16 @@ public class KeycloakRestRepository {
     private final URI uri;
 
     public KeycloakRestRepository(String hostname) {
-        this.client = new ResteasyClientBuilder()
+        this.client = getClient();
+
+        this.uri = URI.create("http://" + hostname);
+    }
+
+    private Client getClient() {
+        return new ResteasyClientBuilder()
                 .establishConnectionTimeout(100, TimeUnit.SECONDS)
                 .socketTimeout(10, TimeUnit.SECONDS)
                 .build();
-
-        this.uri = URI.create("http://" + hostname);
     }
 
     private static JsonObject fromString(String json) {

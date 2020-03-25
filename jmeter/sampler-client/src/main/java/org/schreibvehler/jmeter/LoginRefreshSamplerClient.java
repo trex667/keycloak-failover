@@ -36,7 +36,7 @@ public class LoginRefreshSamplerClient extends AbstractJavaSamplerClient {
         SampleResult result = new SampleResult();
         result.sampleStart();
         try {
-            if (!authenticator.isTokenBoxInitialized()) {
+            if (!authenticator.isAuthenticated()) {
                 authenticator.login(username, password);
                 result.setSuccessful(true);
                 result.setResponseMessage(String.format("Login of user '%s' successful.", username));
@@ -47,7 +47,7 @@ public class LoginRefreshSamplerClient extends AbstractJavaSamplerClient {
             }
         } catch (Exception e) {
             result.setSuccessful(false);
-            if (!authenticator.isTokenBoxInitialized()) {
+            if (!authenticator.isAuthenticated()) {
                 result.setResponseMessage(String.format("Login of user '%s' failed. StackTrace: %s", username, ExceptionUtils.getStackTrace(e)));
             } else {
                 result.setResponseMessage(String.format("Refreshing tokens of user '%s' failed. StackTrace: %s", username, ExceptionUtils.getStackTrace(e)));
@@ -60,7 +60,7 @@ public class LoginRefreshSamplerClient extends AbstractJavaSamplerClient {
 
     @Override
     public void teardownTest(JavaSamplerContext context) {
-        if (authenticator.isTokenBoxInitialized()) {
+        if (authenticator.isAuthenticated()) {
             authenticator.logout();
         }
     }

@@ -13,7 +13,7 @@ public class RefreshRunner implements Runnable {
 
     @Override
     public void run() {
-        if (!authenticator.isTokenBoxInitialized()) {
+        if (!authenticator.isAuthenticated()) {
             authenticator.login(username, password);
         } else {
             authenticator.refresh();
@@ -21,7 +21,7 @@ public class RefreshRunner implements Runnable {
     }
 
     public void logout() {
-        if (authenticator.isTokenBoxInitialized()) {
+        if (authenticator.isAuthenticated()) {
             authenticator.logout();
         }
     }

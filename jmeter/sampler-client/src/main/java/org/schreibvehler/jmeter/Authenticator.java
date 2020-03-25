@@ -10,18 +10,26 @@ public class Authenticator {
 
     private final KeycloakRestRepository repo;
     private TokenBox tokenBox = null;
+    private boolean isAuthenticated = false;
+    private int logins = 0;
+    private static final int MAX_LOGINS = 1;
 
     public Authenticator(KeycloakRestRepository repo) {
         this.repo = repo;
     }
 
     public void login(String username, String password) {
-        try {
-            JsonObject tokenJson = repo.authenticate(new User(username, password));
-            tokenBox = new TokenBox(tokenJson.getString("access_token"), tokenJson.getString("refresh_token"));
-            LOG.info(String.format("Login of user '%s' successful.", username));
-        } catch (Exception e) {
-            throw new AuthException(String.format("Login of user '%s' failed!", username), e);
+        if (!isAuthenticated && logins < MAX_LOGINS) {
+            try {
+                JsonObject tokenJson = repo.authenticate(new User(username, password));
+                tokenBox = new TokenBox(tokenJson.getString("access_token"), tokenJson.getString("refresh_token"));
+                isAuthenticated = true;
+                LOG.info(String.format("Login of user '%s' successful.", username));
+            } catch (Exception e) {
+                throw new AuthException(String.format("Login of user '%s' failed!", username), e);
+            }
+        } else {
+            LOG.info(String.format("Login ignored ===> Login of user %s failed at least for %d times", username, MAX_LOGINS));
         }
     }
 
@@ -59,11 +67,14 @@ public class Authenticator {
 
     }
 
-    public boolean isTokenBoxInitialized() {
-        return tokenBox != null;
+    public boolean isAuthenticated() {
+        return isAuthenticated;
     }
 
     private void validateTokenBox() {
+        if (!isAuthenticated) {
+            throw new AuthException("Not yet authenticated!");
+        }
         if (tokenBox == null || tokenBox.getAccessToken() == null || tokenBox.getRefreshToken() == null) {
             throw new AuthException("Tokenbox is null or accessToken or refreshToken is null!");
         }
