@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.Optional;
 
 public class TokenUtils {
 
@@ -35,10 +34,6 @@ public class TokenUtils {
         String decodedPayload = getPayload(base64EncodedToken);
         final JsonObject json = Json.createReader(new StringReader(decodedPayload)).readObject();
         return json.getString("preferred_username");
-    }
-
-    public static Long getUserId(String base64EncodedToken) {
-        return getJsonNumberFromPayload(base64EncodedToken, "orbis_user_id");
     }
 
     public static boolean isTokenExpired(String base64EncodedToken) {
@@ -68,14 +63,6 @@ public class TokenUtils {
         return entity != null
                 && entity.getJsonString("access_token") != null
                 && entity.getJsonString("refresh_token") != null;
-    }
-
-    public static Optional<Long> getOrbisFacilityId(String base64EncodedToken) {
-        return Optional.ofNullable(getJsonNumberFromPayload(base64EncodedToken, "orbis_facility_id"));
-    }
-
-    public static Optional<Long> getOrbisAliasUserId(String base64EncodedToken) {
-        return Optional.ofNullable(getJsonNumberFromPayload(base64EncodedToken, "orbis_alias_user_id"));
     }
 
     private static Long getJsonNumberFromPayload(final String base64EncodedToken, final String key) {
